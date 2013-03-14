@@ -1,0 +1,13 @@
+必要なもの
+
+	Windows 用のRuby
+	SDL/Ruby
+
+character.rb を実行するとはじまります。
+
+Z 決定
+A キャンセル
+S 位置固定
+X ななめ移動
+= ズーム変更
+e チートジャンプ
