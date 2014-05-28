@@ -60,7 +60,8 @@ module Input
     @@CUR_KEY[Key::RIGHT] = older_time(@@PREV_KEY[Key::RIGHT], now) if x >= AXIS_MAX/2
     @@CUR_KEY[Key::LEFT] = older_time(@@PREV_KEY[Key::LEFT], now) if x <= AXIS_MIN/2
     @@CUR_KEY[Key::UP] = older_time(@@PREV_KEY[Key::UP], now) if y <= AXIS_MIN/2
-    @@CUR_KEY[Key::DOWN] = older_time(@@PREV_KEY[Key::DOWN], now) if y >= AXIS_MAX/2  end
+    @@CUR_KEY[Key::DOWN] = older_time(@@PREV_KEY[Key::DOWN], now) if y >= AXIS_MAX/2
+  end
 
   def Input.older_time(a, b)
     raise if a == nil and b == nil # can't both be nil.
