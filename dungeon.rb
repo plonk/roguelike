@@ -146,6 +146,7 @@ class DungeonScene < Scene
 
   def draw
     set_osd
+
     case @dungeon_state
     when :NEXT_FLOOR_DIALOG
       next_floor_dialog
@@ -187,7 +188,9 @@ class DungeonScene < Scene
       draw_overlay
     when :DO_NOTHING
     end
+
     super
+
     @next_scene
   end
 
@@ -696,54 +699,10 @@ class DungeonScene < Scene
   end
 
   def draw_overlay(translucent = true)
-    if translucent and !Settings.overlay_enabled
-      @status_overlay.draw
-      return
-    end
-
-    if translucent
-      $screen.put(@map_view.surface, 0, 0)
-    else
-      # アルファ値やカラーキーを使わずに描画する
-      # スペースバーが押され、マップのみが表示されている状態
-      Surface.transform_draw(@map_view.surface,$screen,0, 1,1, 0,0,0,0, 0)
-    end
     @status_overlay.draw
+    return if translucent and !Settings.overlay_enabled
 
-    # 主人公の居る場所
-    hero = @map_hero2
-    if $frame_count % 60 < 30
-      hero = @map_hero1
-    end
-    # 下のもの
-    @objects.each do |o|
-      if o.is_a? Exit
-        $screen.put(@map_exit,
-                    (640 - WIDTH*8)/2 + o.xpos*8,
-                    (480 - HEIGHT*8)/2 + o.ypos*8)
-      elsif o.is_a? Trap and (@pc.has_state?(:yokumie) or o.visible?)
-        # 罠は可視の場合のみ表示する
-        $screen.put(@map_trap,
-                    (640 - WIDTH*8)/2 + o.xpos*8,
-                    (480 - HEIGHT*8)/2 + o.ypos*8)
-      elsif o.is_a? Item
-        $screen.put(@map_item,
-                    (640 - WIDTH*8)/2 + o.xpos*8,
-                    (480 - HEIGHT*8)/2 + o.ypos*8)
-      else
-      end
-    end
-    # それに乗るもの
-    @objects.each do |o|
-      if o.is_a? Enemy
-        $screen.put(@map_enemy,
-                    (640 - WIDTH*8)/2 + o.xpos*8,
-                    (480 - HEIGHT*8)/2 + o.ypos*8)
-      end
-    end
-    $screen.put(hero,
-                (640 - WIDTH*8)/2 + @pc.xpos*8,
-                (480 - HEIGHT*8)/2 + @pc.ypos*8)
+    @map_view.draw(translucent, @pc, @objects)
   end
 
   def monsters_move
