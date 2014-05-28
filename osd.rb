@@ -10,7 +10,7 @@ class OSD
     @y = y
 
     @font = Kanji.open("k14-2000-1.bdf", 14)
-    @font.add("A14.bdf")
+    @font.add("a14.bdf")
     @font.set_coding_system(Kanji::SJIS)
 
     @color = "white"
