@@ -139,13 +139,13 @@ class DungeonScene < Scene
     end
   end
 
-  def draw_osd
+  def set_osd
     time_msec = "%2d" % ($time_elapsed_in_frame * 1000)
     @osd.set_text("ターン: #{@turn_count}; フレーム: #{$frame_count}; 時間: #{time_msec}msec; 座標: #{@pc.xpos},#{@pc.ypos}; 状態: #{@dungeon_state.to_s}")
   end
 
   def draw
-    draw_osd
+    set_osd
     case @dungeon_state
     when :NEXT_FLOOR_DIALOG
       next_floor_dialog
