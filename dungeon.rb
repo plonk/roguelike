@@ -82,14 +82,6 @@ class DungeonScene < Scene
     @dungeon_state = :TOP_LEVEL
   end
 
-  def set_state(state)
-    @dungeon_state = state
-  end
-
-  def get_state
-    @dungeon_state
-  end
-
   def event_handler(event)
     return true if super
     return false unless event.is_a? Event::KeyDown # not interested
