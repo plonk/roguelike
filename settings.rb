@@ -12,10 +12,9 @@ module Settings
     self.module_eval("def self.#{sym}=(val); @@settings[:#{sym}]=val; end")
   end
 
-  define_var :worldview_zoom, false, "ワールドの拡大表示"
-  define_var :overlay_enabled, true, "オーバーレイマップの表示"
-  define_var :show_background, true, "背景の表示"
-
+  define_var :worldview_zoom, false, 'ワールドの拡大表示'
+  define_var :overlay_enabled, true, 'オーバーレイマップの表示'
+  define_var :show_background, true, '背景の表示'
 
   def self.value_for(sym)
     @@settings[sym]
@@ -37,13 +36,13 @@ module Settings
       end
     end
     str = Marshal.dump(changed_settings)
-    File.open("settings.dat", "wb") do |f|
+    File.open('settings.dat', 'wb') do |f|
       f.write str
     end
   end
 
   def self.load
-    File.open("settings.dat", "rb") do |f|
+    File.open('settings.dat', 'rb') do |f|
       str = f.read
       @@settings.merge!( Marshal.load(str) )
     end
