@@ -28,14 +28,36 @@ class DungeonScene < Scene
 
     @menu_stack = []
 
-    # @zoom_p = false
-
     Effects.init($field)
 
     @offscreen_color = get_color("darkslategray")
     @objects = []
     @queue = []
 
+    load_resources
+
+    moving_p = false
+    $cx = 320 - 16
+    $cy = 240 - 16
+
+    @floor_level = 1
+    @pc = PlayerCharacter.new
+    init_floor
+
+    @inventory_window = InventoryWindow.new(@pc.inventory)
+
+    @status_overlay = StatusOverlay.new(self)
+    @map_view = MapView.new
+
+    @map_view.render(@map)
+    update_status_overlay
+
+    @message_window = MessageWindow.open
+
+    @dungeon_state = :TOP_LEVEL
+  end
+
+  def load_resources
     # 壁タイル用
     img = Surface.load('data/Dungeon_A1.png')
     # 床タイル用
@@ -56,30 +78,12 @@ class DungeonScene < Scene
     @autotile_wall = []
     init_autotile
 
+    # 音
     @wave = Mixer::Wave.load("data/noise.wav")
     @swish_wav = Mixer::Wave.load("data/swish.wav")
     @dungeon_music = Mixer::Music.load("data/tw023.mp3")
 
-    moving_p = false
-    $cx = 320 - 16
-    $cy = 240 - 16
-
-    @floor_level = 1
-    @pc = PlayerCharacter.new
-    init_floor
-
-    @inventory_window = InventoryWindow.new(@pc.inventory)
-
-    @status_overlay = StatusOverlay.new(self)
-    @map_view = MapView.new
-    @map_view.render(@map)
-    update_status_overlay
-
-    @message_window = MessageWindow.open
-
     @diagonal_arrows = Surface.load("data/diagarrows.png")
-
-    @dungeon_state = :TOP_LEVEL
   end
 
   def event_handler(event)
