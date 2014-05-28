@@ -65,16 +65,16 @@ class Mine < Trap
   def activate
     $scene.queue { $scene.puts("地雷をふんでしまった"); $scene.set_state(:WAIT_MOTION) }
     Effects.start_explosion(320, 240)
-    Sound.play("data/mine_explosion.wav")
+    # Sound.play("data/mine_explosion.wav")
     pc = $scene.pc
-    $scene.queue {
+    $scene.queue do
       if pc.hp == 1
         pc.damage(1, self) # 殺す
       else
         n = pc.hp / 2
         pc.damage(n, self)
       end
-    }
+    end
   end
 
   def failure
