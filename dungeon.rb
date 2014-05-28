@@ -208,47 +208,43 @@ class DungeonScene < Scene
   def create_command_menu
     menu = Menu.new
     menu.set_size(32*4 + 10, 4*32 + Menu::TOP_MARGIN*2)
-    menu.add_item("道具") {
-      Sound.beep
+    menu.add_item("道具") do
       @inventory_window.reset
       @dungeon_state = :COMMAND_MENU
-    }
-    menu.add_item("足元") {
-      Sound.beep
+    end
+    menu.add_item("足元") do
       things_on_floor = @objects.select { |obj| obj.is_a? Item or obj.is_a? Trap or obj.is_a? Exit }
       under_feet = things_on_floor.select { |obj|
         obj.xpos == @pc.xpos and obj.ypos == @pc.ypos }
       asimoto_menu = Menu.new
       asimoto_menu.set_position(Menu::X + 50, Menu::Y + 50)
       if under_feet.empty?
-        asimoto_menu.add_item("足元には何も落ちていない") {
+        asimoto_menu.add_item("足元には何も落ちていない") do
           # 選択してもなにもしない
-        }
+        end
       else
         thing = under_feet[0]
-        asimoto_menu.add_item(thing.name) {
+        asimoto_menu.add_item(thing.name) do
           # 新たなメニューをひらくわけですよ
           fumu_menu = Menu.new
           fumu_menu.set_position(450, Menu::Y)
           @menu_stack << fumu_menu
-          fumu_menu.add_item("ふむ") {
+          fumu_menu.add_item("ふむ") do
             thing.activate
             @menu_stack.clear
             @dungeon_state = :MONSTERS_MOVE
-          }
-        }
+          end
+        end
       end
       @menu_stack << asimoto_menu
-    }
-    menu.add_item("マップ") {
-      Sound.beep
+    end
+    menu.add_item("マップ") do
       Settings.overlay_enabled = !Settings.overlay_enabled
       menu.hide
-    }
-    menu.add_item("その他") {
-      Sound.beep
+    end
+    menu.add_item("その他") do
       puts "え？聞こえない"
-    }
+    end
     return menu
   end
 
