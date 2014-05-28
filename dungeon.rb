@@ -5,6 +5,7 @@ require_relative 'effects'
 require_relative 'message_window'
 require_relative 'input'
 require_relative 'status_overlay'
+require_relative 'map_view'
 
 =begin
 以下のコードは
@@ -57,7 +58,6 @@ class DungeonScene < Scene
 
     @wave = Mixer::Wave.load("data/noise.wav")
     @swish_wav = Mixer::Wave.load("data/swish.wav")
-
     @dungeon_music = Mixer::Music.load("data/tw023.mp3")
 
     moving_p = false
@@ -70,12 +70,9 @@ class DungeonScene < Scene
 
     @inventory_window = InventoryWindow.new(@pc.inventory)
 
-    @overlay = Surface.new(HWSURFACE, 640, 480, $screen.format)
-    @overlay.fill_rect(0, 0, 640, 480, [0,0,0])
-    @overlay.set_color_key(SRCCOLORKEY, @overlay.get_pixel(0,0))
-    @overlay.set_alpha(SRCALPHA, 128)
     @status_overlay = StatusOverlay.new(self)
-    render_overlay_map
+    @map_view = MapView.new
+    @map_view.render(@map)
     update_status_overlay
 
     @message_window = MessageWindow.open
@@ -118,7 +115,7 @@ class DungeonScene < Scene
       @map.phase2
       @map.calc_atinfo
       @osd.set_text("マップを再構成しました")
-      render_overlay_map
+      @map_view.render(@map)
     when Key::E          # ワープ
       @pc.push_motion(MOTION_WARP)
       @dungeon_state = :WAIT_MOTION
@@ -368,7 +365,7 @@ class DungeonScene < Scene
     @message_window.hide
     fade_out
     init_floor
-    render_overlay_map
+    @map_view.render(@map)
     win = Window.new(SCREEN_WIDTH / 2 - 30, SCREEN_HEIGHT / 2 - 14/2)
     win.set_text("次の階...")
     main_loop (0.5*FPS) do
@@ -455,7 +452,7 @@ class DungeonScene < Scene
     @turn_count = 1
     @floor_level = 1
 
-    render_overlay_map
+    @map_view.render(@map)
     update_status_overlay
   end
 
@@ -709,11 +706,11 @@ class DungeonScene < Scene
     end
 
     if translucent
-      $screen.put(@overlay, 0, 0)
+      $screen.put(@map_view.surface, 0, 0)
     else
       # アルファ値やカラーキーを使わずに描画する
       # スペースバーが押され、マップのみが表示されている状態
-      Surface.transform_draw(@overlay,$screen,0, 1,1, 0,0,0,0, 0)
+      Surface.transform_draw(@map_view.surface,$screen,0, 1,1, 0,0,0,0, 0)
     end
     @status_overlay.draw
 
@@ -846,41 +843,6 @@ class DungeonScene < Scene
       @dungeon_state = :DO_NOTHING # 決定ボタンで死んでるのに攻撃しちゃう
     }
   end
-
-  def render_overlay_map
-    map_surface = Surface.new(HWSURFACE, WIDTH*8, HEIGHT*8, $screen.format)
-    (0...WIDTH).each do |x|
-      (0...HEIGHT).each do |y|
-        #        next if x == 0 or y == 0
-        #        next if x == WIDTH-1 or y == HEIGHT-1
-        s = @map[x, y]
-        if s == FLOOR
-          map_surface.fill_rect(x*8, y*8, 8, 8, [0, 0, 255])
-        elsif s == WALL
-
-          # 左上
-          map_surface.fill_rect(x*8, y*8, 2, 2, [255, 255, 255]) if @map[x-1,y-1] == FLOOR
-          # 上
-          map_surface.fill_rect(x*8, y*8, 8, 2, [255, 255, 255]) if @map[x,y-1] == FLOOR
-          # 右上
-          map_surface.fill_rect(x*8+6, y*8, 2, 2, [255, 255, 255]) if @map[x+1,y-1] == FLOOR
-          # 左
-          map_surface.fill_rect(x*8, y*8, 2, 8, [255, 255, 255]) if @map[x-1,y] == FLOOR
-          # 右
-          map_surface.fill_rect(x*8+6, y*8, 2, 8, [255, 255, 255]) if @map[x+1,y] == FLOOR
-          # 左下
-          map_surface.fill_rect(x*8, y*8+6, 2, 2, [255, 255, 255]) if @map[x-1,y+1] == FLOOR
-          # 下
-          map_surface.fill_rect(x*8, y*8+6, 8, 2, [255, 255, 255]) if @map[x,y+1] == FLOOR
-          # 右下
-          map_surface.fill_rect(x*8+6, y*8+6, 2, 2, [255, 255, 255]) if @map[x+1,y+1] == FLOOR
-
-        end
-      end
-    end
-    @overlay.put(map_surface, (640 - WIDTH*8) / 2, (480 - HEIGHT*8) / 2)
-  end
-
 
   def walk
     xstep = (@pc.xpos - @pc.oldx) *2 # 移動した量 × 2 ピクセル
