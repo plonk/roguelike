@@ -915,7 +915,7 @@ class DungeonScene < Scene
   def draw_background(xoff = @pc.xpos*32, yoff = @pc.ypos*32)
     return unless Settings.show_background
 
-    Surface.blit(@background.surface, xoff - $cx, yoff - $cy, 640, 480, $field, 0, 0)
+    @background.draw(xoff - $cx, yoff - $cy, $field)
   end
 
   def init_floor

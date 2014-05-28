@@ -38,6 +38,7 @@ class DungeonBackground
     @background
   end
 
-  def draw
+  def draw(x, y, dest)
+    Surface.blit(surface, x, y, 640, 480, dest, 0, 0)
   end
 end
