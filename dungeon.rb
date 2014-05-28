@@ -16,6 +16,7 @@ require_relative 'dungeon_input'
 =end
 class DungeonScene < Scene
   attr_reader :pc, :floor_level
+  attr_accessor :dungeon_state
 
   def initialize
     super
@@ -40,7 +41,6 @@ class DungeonScene < Scene
 
     load_resources
 
-    moving_p = false
     $cx = 320 - 16
     $cy = 240 - 16
 
@@ -333,8 +333,10 @@ class DungeonScene < Scene
       @dungeon_state = :DEBUG_MENU
     end
     draw_basics
+
     @black_surface.set_alpha(SRCALPHA, 128)
     $field.put(@black_surface, 0, 0)
+
     @inventory_window.draw
     if @inventory_window.selected?
       item = @inventory_window.selection
@@ -778,11 +780,11 @@ class DungeonScene < Scene
   def game_over
     @message_window.add_page("#{@pc.name} は力尽きた")
     wait_message_response
-    queue {
+    queue do
       # fade_out
       @next_scene = TitleScene
       @dungeon_state = :DO_NOTHING # 決定ボタンで死んでるのに攻撃しちゃう
-    }
+    end
   end
 
   def walk

@@ -194,7 +194,7 @@ class Enemy < Character
     if dead?
       m = get_blink_motion(@direction)
       # 攻撃主のモーションが終わってから、点滅を始める
-      $scene.queue { push_motion(m); $scene.set_state(:WAIT_MOTION) }
+      $scene.queue { push_motion(m); $scene.dungeon_state = :WAIT_MOTION }
     end
   end
 end
