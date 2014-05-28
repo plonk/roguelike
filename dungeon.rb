@@ -106,7 +106,7 @@ class DungeonScene < Scene
     when Key::L
       load_dungeon_file
       puts "dungeon load"
-    when Key::I          # 座標情報のINSPECT 
+    when Key::I          # 座標情報のINSPECT
       msg = ["@pc.xpos", "@pc.ypos", "$cx", "$cy"].map {|var| "#{var}: #{eval(var).inspect}"}.join(", ")
       @osd.set_text(msg)
     when Key::Y
@@ -122,7 +122,7 @@ class DungeonScene < Scene
       @map.phase2
       @map.calc_atinfo
       @osd.set_text("マップを再構成しました")
-      render_overlay_map 
+      render_overlay_map
     when Key::E          # ワープ
       @pc.push_motion(MOTION_WARP)
       @dungeon_state = :WAIT_MOTION
@@ -130,7 +130,7 @@ class DungeonScene < Scene
         @pc.position = @map.get_random_place
         @pc.push_motion(MOTION_WARP_DOWN)
         @dungeon_state = :WAIT_MOTION
-        queue do 
+        queue do
           @message_window.add_page("0 ターンで高とんだよ")
         end
       end
@@ -157,7 +157,7 @@ class DungeonScene < Scene
     when :NEXT_FLOOR_DIALOG
       next_floor_dialog
     when :WAIT_MOTION
-      if @pc.in_motion? or 
+      if @pc.in_motion? or
           @objects.select{|obj| obj.is_a? Character and obj.in_motion?}.any? or
           Effects.busy?
         draw_basics
@@ -175,8 +175,8 @@ class DungeonScene < Scene
         @queue.shift
         return draw # @dungeon_state が変更される場合があるので再突入
       end
-      # if @pc.in_motion? or @message_window.scrolling? or 
-      #     @objects.select{|obj| obj.is_a? Character and obj.in_motion?}.any? or 
+      # if @pc.in_motion? or @message_window.scrolling? or
+      #     @objects.select{|obj| obj.is_a? Character and obj.in_motion?}.any? or
       #     Effects.busy?
       #   draw_basics
       #   draw_overlay
@@ -369,7 +369,7 @@ class DungeonScene < Scene
       @dungeon_state = :MONSTERS_MOVE
     end
   end
-  
+
   # 次のフロアに進む
   def next_floor
     @message_window.hide
@@ -378,7 +378,7 @@ class DungeonScene < Scene
     render_overlay_map
     win = Window.new(SCREEN_WIDTH / 2 - 30, SCREEN_HEIGHT / 2 - 14/2)
     win.set_text("次の階...")
-    main_loop (0.5*FPS) do 
+    main_loop (0.5*FPS) do
       fill_screen [0,0,0]
       win.draw
     end
@@ -499,7 +499,7 @@ class DungeonScene < Scene
     dim_rect(x+w, 0, 640, 480)
 
     $field.set_clip_rect( 0, 0, 640, 480 ) # disable clip rect
-  end  
+  end
 
   def draw_basics
     $field.fill_rect(0,0,640,480, @offscreen_color)
@@ -527,7 +527,7 @@ class DungeonScene < Scene
     upper = (possibly_visible_objects - under + [@pc]).sort { |a,b|
       a.ypos <=> b.ypos
     }
-    
+
     under.each do |obj|
       if obj.is_a? Trap and (not @pc.has_state?(:yokumie) and not obj.visible?)
         # 不可視の罠は描画しない
@@ -553,7 +553,7 @@ class DungeonScene < Scene
 
     copy_field_to_screen
 
-    
+
     @message_window.draw
   end
 
@@ -592,7 +592,7 @@ class DungeonScene < Scene
 
     monsters_move
     @pc.position = @pc.position # 移動描画にならないように過去の位置を消す
-    if enemy_on_screen_p 
+    if enemy_on_screen_p
       walk
     end
     monsters_act
@@ -646,19 +646,19 @@ class DungeonScene < Scene
       enemy = nil
       if someone_there?(targetx, targety )
         enemy = @objects.select{|obj| obj.is_a? Character and
-          obj.xpos == targetx and 
+          obj.xpos == targetx and
           obj.ypos == targety}[0]
         point = @pc.offense
         enemy.damage(point, @pc)
       end
-      main_loop(motion_length(attack_motion)) do 
+      main_loop(motion_length(attack_motion)) do
         draw_basics
         draw_overlay
         @osd.draw
       end
       unless enemy
         # ワナチェック
-        trap = @objects.select{|obj| obj.is_a? Trap and 
+        trap = @objects.select{|obj| obj.is_a? Trap and
           obj.xpos == targetx and obj.ypos == targety }[0]
         if trap and trap.visible? == false
           # 不可視の場合は 煙を出して可視にする
@@ -672,11 +672,11 @@ class DungeonScene < Scene
         @message_window.add_page("#{enemy.name} をやっつけた！\n"+
                                  "#{enemy.exp} ポイントの経験値を得た")
         @pc.gain_exp(enemy.exp)
-        
+
         # モーションが終った後で削除する
         # (dead? なやつは TOP_LEVEL の頭で
         # 自動的に削除するようにしたらいいかも)
-        queue { @objects.delete(enemy) } 
+        queue { @objects.delete(enemy) }
       end
       queue { @dungeon_state = :MONSTERS_MOVE } # モンスター移動フェーズへ移行
     elsif Input.pressed? Key::X
@@ -701,7 +701,7 @@ class DungeonScene < Scene
         monsters_move
         walk unless Input.pressed? Key::A # ダッシュ中
         # walk_by_motion unless Input.pressed? Key::A # ダッシュ中
-        queue do 
+        queue do
           pick_item
           trap_enter
           monsters_act
@@ -736,11 +736,11 @@ class DungeonScene < Scene
   def draw_overlay(translucent = true)
     if translucent and !Settings.overlay_enabled
       @status_overlay.draw
-      return 
+      return
     end
-    
+
     if translucent
-      $screen.put(@overlay, 0, 0) 
+      $screen.put(@overlay, 0, 0)
     else
       # アルファ値やカラーキーを使わずに描画する
       # スペースバーが押され、マップのみが表示されている状態
@@ -793,7 +793,7 @@ class DungeonScene < Scene
       next if enemy.adjacent_to? @pc
 
       coords = nil
-      xoff = @pc.xpos - enemy.xpos 
+      xoff = @pc.xpos - enemy.xpos
       yoff = @pc.ypos - enemy.ypos
       x = enemy.xpos + 1 if xoff > 0
       x = enemy.xpos - 1 if xoff < 0
@@ -813,7 +813,7 @@ class DungeonScene < Scene
           (enemy.ypos-1..enemy.ypos+1).each do |y|
             next if enemy.xpos == x and enemy.ypos == y
             if @map.enterable?(x, y) and not someone_there?(x, y)
-              candidates << [x, y] 
+              candidates << [x, y]
             end
           end
         end
@@ -853,7 +853,7 @@ class DungeonScene < Scene
       enemy.change_direction(dir)
       motion = attack(dir)
       enemy.push_motion(motion)
-      main_loop(motion_length(motion)) do 
+      main_loop(motion_length(motion)) do
         draw_basics
         draw_overlay
       end
@@ -889,7 +889,7 @@ class DungeonScene < Scene
           map_surface.fill_rect(x*8, y*8, 8, 8, [0, 0, 255])
         elsif s == WALL
 
-          # 左上          
+          # 左上
           map_surface.fill_rect(x*8, y*8, 2, 2, [255, 255, 255]) if @map[x-1,y-1] == FLOOR
           # 上
           map_surface.fill_rect(x*8, y*8, 8, 2, [255, 255, 255]) if @map[x,y-1] == FLOOR
@@ -918,11 +918,11 @@ class DungeonScene < Scene
     ystep = (@pc.ypos - @pc.oldy) *2
     i = 0
     if xstep == 0 and ystep == 0 and
-        (@moved.empty? or @moved.select {|obj| (@pc.xpos-10..@pc.xpos+10).include? obj.xpos and 
+        (@moved.empty? or @moved.select {|obj| (@pc.xpos-10..@pc.xpos+10).include? obj.xpos and
         (@pc.ypos-7..@pc.ypos+7).include? obj.ypos}.empty?)
       return
     end
-    main_loop do 
+    main_loop do
       @osd.set_text("ターン: #{@turn_count}; フレーム: #{$frame_count}; 状態: #{@dungeon_state.to_s}") # shouldn't have to do this ...
       i += 1
       $field.fill_rect(0,0,640,480, @offscreen_color)
@@ -967,7 +967,7 @@ class DungeonScene < Scene
     ystep = (@pc.ypos - @pc.oldy) *2
     i = 0
     if xstep == 0 and ystep == 0 and
-        (@moved.empty? or @moved.select {|obj| (@pc.xpos-10..@pc.xpos+10).include? obj.xpos and 
+        (@moved.empty? or @moved.select {|obj| (@pc.xpos-10..@pc.xpos+10).include? obj.xpos and
         (@pc.ypos-7..@pc.ypos+7).include? obj.ypos}.empty?)
       return
     end
@@ -1047,7 +1047,7 @@ class DungeonScene < Scene
     oy = $cy - yoff
     (0...HEIGHT).each do |y|
       (0...WIDTH).each do |x|
-        unless (-31...SCREEN_WIDTH).include?(ox + x * 32) and 
+        unless (-31...SCREEN_WIDTH).include?(ox + x * 32) and
             # 画面に表示されてなかったらスキップ
             (-31...SCREEN_HEIGHT).include?(oy + y * 32)
           next
@@ -1165,7 +1165,7 @@ class DungeonScene < Scene
       elsif diagonal == WALL and vertical == WALL and side == WALL
         Surface.blit(@tileset, 1*16, 3*16, 16, 16, tile, 16, 16)
       end
-      
+
       @autotile_wall[id] = tile
     end
   end
@@ -1178,13 +1178,13 @@ class DungeonScene < Scene
     @turn_count = 1
 
     @objects = []
-    5.times do 
+    5.times do
       @objects << Hole.new(*@map.get_random_place)
       @objects << Warp.new(*@map.get_random_place)
       @objects << Mine.new(*@map.get_random_place)
     end
     @objects << Exit.new(*@map.get_random_place)
-    10.times do 
+    10.times do
 #      @objects << Enemy.new(*@map.get_random_place, ["ベネフィット","ちんたら","悪い箱"].sample)
       @objects << Enemy.new(*@map.get_random_place, ["ちんたら","悪い箱"].sample)
       @objects.last.change_direction(ALL_DIRECTIONS.sample)
@@ -1201,4 +1201,3 @@ class DungeonScene < Scene
     @message_window.add_page(str)
   end
 end
-
