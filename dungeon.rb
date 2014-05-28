@@ -15,7 +15,6 @@ require_relative 'dungeon_input'
 背景、オーバーレイ、
 =end
 class DungeonScene < Scene
-  attr_reader :pc, :floor_level
   attr_accessor :dungeon_state
 
   def initialize
@@ -45,10 +44,10 @@ class DungeonScene < Scene
     $cy = 240 - 16
 
     @floor_level = 1
-    @pc = PlayerCharacter.new
+    @player = PlayerCharacter.new
     init_floor
 
-    @inventory_window = InventoryWindow.new(@pc.inventory)
+    @inventory_window = InventoryWindow.new(@player.inventory)
 
     @status_overlay = StatusOverlay.new(self)
     @map_view = MapView.new
@@ -82,13 +81,13 @@ class DungeonScene < Scene
       load_dungeon_file
       puts "dungeon load"
     when Key::I          # 座標情報のINSPECT
-      msg = ["@pc.xpos", "@pc.ypos", "$cx", "$cy"].map {|var| "#{var}: #{eval(var).inspect}"}.join(", ")
+      msg = ["@player.xpos", "@player.ypos", "$cx", "$cy"].map {|var| "#{var}: #{eval(var).inspect}"}.join(", ")
       @osd.set_text(msg)
     when Key::Y
-      if @pc.has_state?(:yokumie)
-        @pc.set_state(:yokumie, 0)
+      if @player.has_state?(:yokumie)
+        @player.set_state(:yokumie, 0)
       else
-        @pc.set_state(:yokumie, 1500)
+        @player.set_state(:yokumie, 1500)
       end
       Sound.play("data/kiri.wav")
       puts("よくみえ状態を切り替えました")
@@ -99,11 +98,11 @@ class DungeonScene < Scene
       @osd.set_text("マップを再構成しました")
       @map_view.render(@map)
     when Key::E          # ワープ
-      @pc.push_motion(MOTION_WARP)
+      @player.push_motion(MOTION_WARP)
       @dungeon_state = :WAIT_MOTION
       queue do
-        @pc.position = @map.get_random_place
-        @pc.push_motion(MOTION_WARP_DOWN)
+        @player.position = @map.get_random_place
+        @player.push_motion(MOTION_WARP_DOWN)
         @dungeon_state = :WAIT_MOTION
         queue do
           @message_window.add_page("0 ターンで高とんだよ")
@@ -116,18 +115,18 @@ class DungeonScene < Scene
   end
 
   def warp
-    @pc.push_motion(MOTION_WARP)
+    @player.push_motion(MOTION_WARP)
     @dungeon_state = :WAIT_MOTION
     queue do
-      @pc.position = @map.get_random_place
-      @pc.push_motion(MOTION_WARP_DOWN)
+      @player.position = @map.get_random_place
+      @player.push_motion(MOTION_WARP_DOWN)
       @dungeon_state = :WAIT_MOTION
     end
   end
 
   def set_osd
     time_msec = "%2d" % ($time_elapsed_in_frame * 1000)
-    @osd.set_text("ターン: #{@turn_count}; フレーム: #{$frame_count}; 時間: #{time_msec}msec; 座標: #{@pc.xpos},#{@pc.ypos}; 状態: #{@dungeon_state.to_s}")
+    @osd.set_text("ターン: #{@turn_count}; フレーム: #{$frame_count}; 時間: #{time_msec}msec; 座標: #{@player.xpos},#{@player.ypos}; 状態: #{@dungeon_state.to_s}")
   end
 
   def draw
@@ -137,12 +136,12 @@ class DungeonScene < Scene
     when :NEXT_FLOOR_DIALOG
       next_floor_dialog
     when :WAIT_MOTION
-      if @pc.in_motion? or
+      if @player.in_motion? or
           @objects.select{|obj| obj.is_a? Character and obj.in_motion?}.any? or
           Effects.busy?
         draw_basics
         draw_overlay
-        wait_list = ( [@pc] + @objects.select{|obj|obj.is_a? Character} ).select{|obj|obj.in_motion?}
+        wait_list = ( [@player] + @objects.select{|obj|obj.is_a? Character} ).select{|obj|obj.in_motion?}
         @osd.set_text("Waiting for #{wait_list.inspect}")
       else
         @dungeon_state = :TOP_LEVEL
@@ -190,7 +189,7 @@ class DungeonScene < Scene
     menu.add_item("足元") do
       things_on_floor = @objects.select { |obj| obj.is_a? Item or obj.is_a? Trap or obj.is_a? Exit }
       under_feet = things_on_floor.select { |obj|
-        obj.xpos == @pc.xpos and obj.ypos == @pc.ypos }
+        obj.xpos == @player.xpos and obj.ypos == @player.ypos }
       asimoto_menu = Menu.new
       asimoto_menu.set_position(Menu::X + 50, Menu::Y + 50)
       if under_feet.empty?
@@ -274,7 +273,7 @@ class DungeonScene < Scene
   end
 
   def turn_end
-    @pc.natural_heal
+    @player.natural_heal
     @turn_count += 1
     update_status_overlay
     @message_window.clear
@@ -286,7 +285,7 @@ class DungeonScene < Scene
 
   def monsters_move2
     monsters_move
-    @pc.position = @pc.position
+    @player.position = @player.position
     walk
     monsters_act
     @dungeon_state = :TURN_END
@@ -340,8 +339,8 @@ class DungeonScene < Scene
     @inventory_window.draw
     if @inventory_window.selected?
       item = @inventory_window.selection
-      @pc.inventory.delete(@inventory_window.selection)
-      item.use(@pc)
+      @player.inventory.delete(@inventory_window.selection)
+      item.use(@player)
       @menu_stack.clear
       @dungeon_state = :MONSTERS_MOVE
     end
@@ -427,8 +426,8 @@ class DungeonScene < Scene
         @objects << Exit.new( args[0].to_i, args[1].to_i )
       when "Player"
         assert args.size == 2
-        @pc = PlayerCharacter.new( args[0].to_i, args[1].to_i )
-        @inventory_window = InventoryWindow.new( @pc.inventory )
+        @player = PlayerCharacter.new( args[0].to_i, args[1].to_i )
+        @inventory_window = InventoryWindow.new( @player.inventory )
       end
     end
 
@@ -444,8 +443,8 @@ class DungeonScene < Scene
   end
 
   def current_visible_rect
-    Rectangle.new(@pc.xpos * 32 - $cx,
-                  @pc.ypos * 32 - $cy,
+    Rectangle.new(@player.xpos * 32 - $cx,
+                  @player.ypos * 32 - $cy,
                   SCREEN_WIDTH,
                   SCREEN_HEIGHT)
   end
@@ -482,8 +481,8 @@ class DungeonScene < Scene
 
     $field.set_clip_rect( 320-48, 240-48, 96, 96 )
 
-    range_x = (@pc.xpos - (10 + 1))..(@pc.xpos + (10 + 1))
-    range_y = (@pc.ypos - (7 + 1))..(@pc.ypos + (7 + 1))
+    range_x = (@player.xpos - (10 + 1))..(@player.xpos + (10 + 1))
+    range_y = (@player.ypos - (7 + 1))..(@player.ypos + (7 + 1))
 
     # アニメーションが更新されなくなるので
     possibly_visible_objects = @objects
@@ -493,21 +492,21 @@ class DungeonScene < Scene
       obj.is_a? Exit or
       obj.is_a? Trap
     end
-    upper = (possibly_visible_objects - under + [@pc]).sort do |a,b|
+    upper = (possibly_visible_objects - under + [@player]).sort do |a,b|
       a.ypos <=> b.ypos
     end
 
     under.each do |obj|
-      if obj.is_a? Trap and (not @pc.has_state?(:yokumie) and not obj.visible?)
+      if obj.is_a? Trap and (not @player.has_state?(:yokumie) and not obj.visible?)
         # 不可視の罠は描画しない
         next
       end
-      obj.draw($cx + (obj.xpos-@pc.xpos) * 32 + 16,
-               $cy + (obj.ypos-@pc.ypos) * 32 + 16)
+      obj.draw($cx + (obj.xpos-@player.xpos) * 32 + 16,
+               $cy + (obj.ypos-@player.ypos) * 32 + 16)
     end
     upper.each do |obj|
-      obj.draw($cx + (obj.xpos-@pc.xpos) * 32 + 16,
-               $cy + (obj.ypos-@pc.ypos) * 32 + 16)
+      obj.draw($cx + (obj.xpos-@player.xpos) * 32 + 16,
+               $cy + (obj.ypos-@player.ypos) * 32 + 16)
     end
 
     $field.set_clip_rect(0, 0, 640, 480) # disable clip rect
@@ -544,24 +543,24 @@ class DungeonScene < Scene
   end
 
   def update_status_overlay
-    @status_overlay.update
+    @status_overlay.update(@floor_level, @player)
   end
 
   # one iteration of 足踏み
   def wait_in_place
     enemy_on_screen_p = @objects.select do |obj|
       obj.is_a? Character and # 本来起きているかの判定が必要
-      (-10..10).include?(obj.xpos - @pc.xpos) and
-      (-7..7).include?(obj.ypos - @pc.ypos)
+      (-10..10).include?(obj.xpos - @player.xpos) and
+      (-7..7).include?(obj.ypos - @player.ypos)
     end.any?
 
     monsters_move
-    @pc.position = @pc.position # 移動描画にならないように過去の位置を消す
+    @player.position = @player.position # 移動描画にならないように過去の位置を消す
     if enemy_on_screen_p
       walk
     end
     monsters_act
-    @pc.natural_heal
+    @player.natural_heal
     @turn_count += 1
     update_status_overlay
     @message_window.clear
@@ -595,18 +594,18 @@ class DungeonScene < Scene
     elsif @input.attack?
       # 攻撃
       Mixer.play_channel(0, @swish_wav, 0)
-      attack_motion = attack(@pc.direction)
-      @pc.push_motion(attack_motion)
-      off = direction_to_offsets(@pc.direction)
-      targetx = @pc.xpos + off[0]
-      targety = @pc.ypos + off[1]
+      attack_motion = attack(@player.direction)
+      @player.push_motion(attack_motion)
+      off = direction_to_offsets(@player.direction)
+      targetx = @player.xpos + off[0]
+      targety = @player.ypos + off[1]
       enemy = nil
       if someone_there?(targetx, targety )
         enemy = @objects.select{|obj| obj.is_a? Character and
           obj.xpos == targetx and
           obj.ypos == targety}[0]
-        point = @pc.offense
-        enemy.damage(point, @pc)
+        point = @player.offense
+        enemy.damage(point, @player)
       end
       main_loop(motion_length(attack_motion)) do
         draw_basics
@@ -619,8 +618,8 @@ class DungeonScene < Scene
           obj.xpos == targetx and obj.ypos == targety }[0]
         if trap and trap.visible? == false
           # 不可視の場合は 煙を出して可視にする
-          xoff = (trap.xpos - @pc.xpos) * 32
-          yoff = (trap.ypos - @pc.ypos) * 32
+          xoff = (trap.xpos - @player.xpos) * 32
+          yoff = (trap.ypos - @player.ypos) * 32
           Effects.start_smoke(320 + xoff, 240 + yoff)
           trap.visible = true
         end
@@ -628,7 +627,7 @@ class DungeonScene < Scene
       if enemy and enemy.dead?
         @message_window.add_page("#{enemy.name} をやっつけた！\n"+
                                  "#{enemy.exp} ポイントの経験値を得た")
-        @pc.gain_exp(enemy.exp)
+        @player.gain_exp(enemy.exp)
 
         # モーションが終った後で削除する
         # (dead? なやつは TOP_LEVEL の頭で
@@ -639,7 +638,7 @@ class DungeonScene < Scene
     elsif @input.rotate?
       # 方向転換
       if dir = get_direction
-        @pc.change_direction(dir)
+        @player.change_direction(dir)
       end
     elsif @input.quit?
       # タイトルシーンに戻る
@@ -647,14 +646,14 @@ class DungeonScene < Scene
       @next_scene = TitleScene
     elsif dir = @input.direction
       # 十字キーが押されていた
-      xpos = @pc.xpos; ypos = @pc.ypos
+      xpos = @player.xpos; ypos = @player.ypos
       xoffset, yoffset = direction_to_offsets(dir)
       xpos += xoffset
       ypos += yoffset
-      @pc.change_direction(dir)
+      @player.change_direction(dir)
       if @map.enterable?(xpos, ypos) and !someone_there?(xpos, ypos)
         # 実際に移動する
-        @pc.position = [xpos, ypos]
+        @player.position = [xpos, ypos]
         monsters_move
         walk unless Input.pressed? Key::A # ダッシュ中
         # walk_by_motion unless Input.pressed? Key::A # ダッシュ中
@@ -690,7 +689,7 @@ class DungeonScene < Scene
     @status_overlay.draw
     return if translucent and !Settings.overlay_enabled
 
-    @map_view.draw(translucent, @pc, @objects)
+    @map_view.draw(translucent, @player, @objects)
   end
 
   def monsters_move
@@ -699,11 +698,11 @@ class DungeonScene < Scene
     # 移動
     @monsters.each do |enemy|
       # 攻撃をする。移動しない
-      next if enemy.adjacent_to? @pc
+      next if enemy.adjacent_to? @player
 
       coords = nil
-      xoff = @pc.xpos - enemy.xpos
-      yoff = @pc.ypos - enemy.ypos
+      xoff = @player.xpos - enemy.xpos
+      yoff = @player.ypos - enemy.ypos
       x = enemy.xpos + 1 if xoff > 0
       x = enemy.xpos - 1 if xoff < 0
       x = enemy.xpos if xoff == 0
@@ -735,9 +734,9 @@ class DungeonScene < Scene
       direction = offsets_to_direction [xpos-enemy.xpos, ypos-enemy.ypos]
       enemy.position = coords
       enemy.change_direction(direction)
-      if enemy.adjacent_to? @pc
+      if enemy.adjacent_to? @player
         # Player に隣接する位置に移動したらプレーヤーの方を向く
-        off = [@pc.xpos - enemy.xpos, @pc.ypos - enemy.ypos]
+        off = [@player.xpos - enemy.xpos, @player.ypos - enemy.ypos]
         dir = offsets_to_direction(off)
         enemy.change_direction(dir)
       end
@@ -757,7 +756,7 @@ class DungeonScene < Scene
       Mixer.play_channel(0, @swish_wav, 0)
 
       # the two must be adjacent to each other.
-      off = [@pc.xpos - enemy.xpos, @pc.ypos - enemy.ypos]
+      off = [@player.xpos - enemy.xpos, @player.ypos - enemy.ypos]
       dir = offsets_to_direction(off)
       enemy.change_direction(dir)
       motion = attack(dir)
@@ -767,9 +766,9 @@ class DungeonScene < Scene
         draw_overlay
       end
 
-      @pc.damage(point, enemy)
+      @player.damage(point, enemy)
 
-      if @pc.dead?
+      if @player.dead?
         game_over
         break
       end
@@ -778,7 +777,7 @@ class DungeonScene < Scene
   end
 
   def game_over
-    @message_window.add_page("#{@pc.name} は力尽きた")
+    @message_window.add_page("#{@player.name} は力尽きた")
     wait_message_response
     queue do
       # fade_out
@@ -788,12 +787,12 @@ class DungeonScene < Scene
   end
 
   def walk
-    xstep = (@pc.xpos - @pc.oldx) *2 # 移動した量 × 2 ピクセル
-    ystep = (@pc.ypos - @pc.oldy) *2
+    xstep = (@player.xpos - @player.oldx) *2 # 移動した量 × 2 ピクセル
+    ystep = (@player.ypos - @player.oldy) *2
     i = 0
     if xstep == 0 and ystep == 0 and
-        (@moved.empty? or @moved.select {|obj| (@pc.xpos-10..@pc.xpos+10).include? obj.xpos and
-        (@pc.ypos-7..@pc.ypos+7).include? obj.ypos}.empty?)
+        (@moved.empty? or @moved.select {|obj| (@player.xpos-10..@player.xpos+10).include? obj.xpos and
+        (@player.ypos-7..@player.ypos+7).include? obj.ypos}.empty?)
       return
     end
     main_loop do
@@ -802,25 +801,25 @@ class DungeonScene < Scene
       $field.fill_rect(0,0,640,480, @offscreen_color)
       $miniscreen.fill_rect(0,0,320,240, @offscreen_color)
       fill_screen(@offscreen_color)
-      draw_background(@pc.oldx * 32 + xstep * i, @pc.oldy * 32 + ystep * i)
+      draw_background(@player.oldx * 32 + xstep * i, @player.oldy * 32 + ystep * i)
       @objects.each do |obj|
         if @moved.include? obj
           # (x, y) 背景に同期した座標
-          x = $cx + (obj.oldx-@pc.oldx) * 32 - xstep*i
-          y = $cy + (obj.oldy-@pc.oldy) * 32 - ystep*i
+          x = $cx + (obj.oldx-@player.oldx) * 32 - xstep*i
+          y = $cy + (obj.oldy-@player.oldy) * 32 - ystep*i
           oxstep = (obj.xpos - obj.oldx) * 2
           oystep = (obj.ypos - obj.oldy) * 2
           obj.draw(x + oxstep*i + 16, y + oystep*i + 16)
         else
-          if obj.is_a? Trap and (not @pc.has_state?(:yokumie) and not obj.visible?)
+          if obj.is_a? Trap and (not @player.has_state?(:yokumie) and not obj.visible?)
             next
           end
-          x = $cx + (obj.xpos-@pc.oldx) * 32 - xstep*i
-          y = $cy + (obj.ypos-@pc.oldy) * 32 - ystep*i
+          x = $cx + (obj.xpos-@player.oldx) * 32 - xstep*i
+          y = $cy + (obj.ypos-@player.oldy) * 32 - ystep*i
           obj.draw(x + 16, y + 16)
         end
       end
-      @pc.draw($cx + 16, $cy + 16)
+      @player.draw($cx + 16, $cy + 16)
       draw_diagonal_arrows
 
       Effects.draw
@@ -833,16 +832,16 @@ class DungeonScene < Scene
 
       break if i == 16
     end
-#    @pc.position = [xpos, ypos]
+#    @player.position = [xpos, ypos]
   end
 
   def walk_by_motion
-    xstep = (@pc.xpos - @pc.oldx) *2 # 移動した量 × 2 ピクセル
-    ystep = (@pc.ypos - @pc.oldy) *2
+    xstep = (@player.xpos - @player.oldx) *2 # 移動した量 × 2 ピクセル
+    ystep = (@player.ypos - @player.oldy) *2
     i = 0
     if xstep == 0 and ystep == 0 and
-        (@moved.empty? or @moved.select {|obj| (@pc.xpos-10..@pc.xpos+10).include? obj.xpos and
-        (@pc.ypos-7..@pc.ypos+7).include? obj.ypos}.empty?)
+        (@moved.empty? or @moved.select {|obj| (@player.xpos-10..@player.xpos+10).include? obj.xpos and
+        (@player.ypos-7..@player.ypos+7).include? obj.ypos}.empty?)
       return
     end
 
@@ -852,18 +851,18 @@ class DungeonScene < Scene
         obj.push_motion motion
       end
     end
-#    @pc.position = [xpos, ypos]
+#    @player.position = [xpos, ypos]
     @dungeon_state = :WAIT_MOTION
   end
 
   def pick_item
     item_picked = nil
     @objects.select{|obj| obj.is_a? Item}.each do |item|
-      if [item.xpos, item.ypos] == [@pc.xpos, @pc.ypos]
-        if @pc.inventory.full?
+      if [item.xpos, item.ypos] == [@player.xpos, @player.ypos]
+        if @player.inventory.full?
           puts "持ち物がいっぱいで持てない"
         else
-          item.on_pick(@pc)
+          item.on_pick(@player)
           puts "#{item.name} を拾った"
           item_picked = item
         end
@@ -876,7 +875,7 @@ class DungeonScene < Scene
 
   def trap_enter
     @objects.each do |obj|
-      if obj.xpos == @pc.xpos and obj.ypos == @pc.ypos
+      if obj.xpos == @player.xpos and obj.ypos == @player.ypos
         obj.on_enter(self)
       end
     end
@@ -884,7 +883,7 @@ class DungeonScene < Scene
 
   # ひきのばし
   # まだ書いてない
-  def draw_background(xoff = @pc.xpos*32, yoff = @pc.ypos*32)
+  def draw_background(xoff = @player.xpos*32, yoff = @player.ypos*32)
     return unless Settings.show_background
 
     @background.draw(xoff - $cx, yoff - $cy, $field)
@@ -894,7 +893,7 @@ class DungeonScene < Scene
     @map = Map.new
     # @map = NiheyaMap.new
     @background.update(@map)
-    @pc.position = @map.get_random_place
+    @player.position = @map.get_random_place
     @turn_count = 1
 
     @objects = []
