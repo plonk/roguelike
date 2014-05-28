@@ -66,23 +66,19 @@ class DungeonScene < Scene
 
     @floor_level = 1
     @pc = PlayerCharacter.new
-#    @pc.set_state(:yokumie, 1500)
     init_floor
 
     @inventory_window = InventoryWindow.new(@pc.inventory)
 
-    #    @overlay = Surface.load("data/map.png")
     @overlay = Surface.new(HWSURFACE, 640, 480, $screen.format)
     @overlay.fill_rect(0, 0, 640, 480, [0,0,0])
     @overlay.set_color_key(SRCCOLORKEY, @overlay.get_pixel(0,0))
-#    @overlay.set_alpha(SRCALPHA, 96)
     @overlay.set_alpha(SRCALPHA, 128)
     @status_overlay = StatusOverlay.new(self)
     render_overlay_map
     update_status_overlay
 
     @message_window = MessageWindow.open
-#    @message_window.reset # いらないほうがいい。
 
     @diagonal_arrows = Surface.load("data/diagarrows.png")
 
@@ -150,9 +146,13 @@ class DungeonScene < Scene
     end
   end
 
-  def draw
+  def draw_osd
     time_msec = "%2d" % ($time_elapsed_in_frame * 1000)
     @osd.set_text("ターン: #{@turn_count}; フレーム: #{$frame_count}; 時間: #{time_msec}msec; 座標: #{@pc.xpos},#{@pc.ypos}; 状態: #{@dungeon_state.to_s}")
+  end
+
+  def draw
+    draw_osd
     case @dungeon_state
     when :NEXT_FLOOR_DIALOG
       next_floor_dialog
@@ -175,14 +175,7 @@ class DungeonScene < Scene
         @queue.shift
         return draw # @dungeon_state が変更される場合があるので再突入
       end
-      # if @pc.in_motion? or @message_window.scrolling? or
-      #     @objects.select{|obj| obj.is_a? Character and obj.in_motion?}.any? or
-      #     Effects.busy?
-      #   draw_basics
-      #   draw_overlay
-      # else
-        dungeon_top_level
-      # end
+      dungeon_top_level
     when :DEBUG_MENU
       _debug_menu
     when :MONSTERS_MOVE
@@ -418,10 +411,6 @@ class DungeonScene < Scene
       end
     end
 
-    # p floor_sec
-    # p map_sec
-    # p object_sec
-
     # マップが WIDTH * HEIGHT になるようにする
     map_sec.map do |line|
       assert(line =~ /^[, ]+$/)
@@ -487,13 +476,13 @@ class DungeonScene < Scene
 +------+----------+------+
 =end
 
-  def dim_rect (x, y, w, h)
+  def dim_rect(x, y, w, h)
     $field.set_clip_rect( x, y, w, h ) # ひだり
     $field.put( @dimmer, 0,0 )
   end
 
-  def dim (x, y, w, h)
-    dim_rect( 0, 0, x, 480 ) # ひだり
+  def dim(x, y, w, h)
+    dim_rect(0, 0, x, 480) # ひだり
     dim_rect(x, 0, w, y)
     dim_rect(x, y+h, w, 480)
     dim_rect(x+w, 0, 640, 480)
@@ -508,25 +497,21 @@ class DungeonScene < Scene
     draw_map
 
     $field.set_clip_rect( 320-48, 240-48, 96, 96 )
-#    $field.set_clip_rect( 160, 120, 320, 240 )
 
     range_x = (@pc.xpos - (10 + 1))..(@pc.xpos + (10 + 1))
     range_y = (@pc.ypos - (7 + 1))..(@pc.ypos + (7 + 1))
-    # possibly_visible_objects = @objects.select { |obj|
-    #   range_x.include?( obj.xpos )  and range_y.include?( obj.ypos )
-    # }
 
     # アニメーションが更新されなくなるので
     possibly_visible_objects = @objects
 
-    under = possibly_visible_objects.select { |obj|
+    under = possibly_visible_objects.select do |obj|
       obj.is_a? Item or
       obj.is_a? Exit or
       obj.is_a? Trap
-    }
-    upper = (possibly_visible_objects - under + [@pc]).sort { |a,b|
+    end
+    upper = (possibly_visible_objects - under + [@pc]).sort do |a,b|
       a.ypos <=> b.ypos
-    }
+    end
 
     under.each do |obj|
       if obj.is_a? Trap and (not @pc.has_state?(:yokumie) and not obj.visible?)
@@ -540,19 +525,15 @@ class DungeonScene < Scene
       obj.draw($cx + (obj.xpos-@pc.xpos) * 32 + 16,
                $cy + (obj.ypos-@pc.ypos) * 32 + 16)
     end
-    # @pc.draw($cx, $cy)
-#    @osd.set_text("#{drawn} objs drawn; #{not_drawn} not")
 
-
-    $field.set_clip_rect( 0, 0, 640, 480 ) # disable clip rect
-    dim( 320-48, 240-48, 96, 96 )
+    $field.set_clip_rect(0, 0, 640, 480) # disable clip rect
+    dim(320-48, 240-48, 96, 96)
 
     draw_diagonal_arrows
 
     Effects.draw
 
     copy_field_to_screen
-
 
     @message_window.draw
   end
@@ -584,11 +565,11 @@ class DungeonScene < Scene
 
   # one iteration of 足踏み
   def wait_in_place
-    enemy_on_screen_p = @objects.select { |obj|
+    enemy_on_screen_p = @objects.select do |obj|
       obj.is_a? Character and # 本来起きているかの判定が必要
       (-10..10).include?(obj.xpos - @pc.xpos) and
       (-7..7).include?(obj.ypos - @pc.ypos)
-    }.any?
+    end.any?
 
     monsters_move
     @pc.position = @pc.position # 移動描画にならないように過去の位置を消す
@@ -605,7 +586,6 @@ class DungeonScene < Scene
       # もはや同時押しされていない
       @dungeon_state = :TOP_LEVEL
     end
-
 
     draw_basics
     draw_overlay
@@ -624,13 +604,6 @@ class DungeonScene < Scene
       @menu_stack << create_command_menu
       Sound.beep
       @dungeon_state = :DEBUG_MENU
-=begin
-    elsif Input.triggered? Key::S
-      # コマンドウィンドウを開く
-      Sound.beep
-      @inventory_window.reset
-      @dungeon_state = :COMMAND_MENU
-=end
     elsif Input.triggered? Key::D
       @menu_stack << create_debug_menu
       Sound.beep
@@ -707,10 +680,6 @@ class DungeonScene < Scene
           monsters_act
           @dungeon_state = :TURN_END
         end
-        # @pc.natural_heal
-        # @turn_count += 1
-        # update_status_overlay
-        # @message_window.clear
       else
         # なにもしない
       end
@@ -1009,7 +978,7 @@ class DungeonScene < Scene
   end
 
   def diagonal_locked?
-#    return  (Input.pressed? Key::W or Input.pressed? Key::LSHIFT)
+    # return (Input.pressed? Key::W or Input.pressed? Key::LSHIFT)
     return Input.pressed? Key::W
   end
 
@@ -1084,8 +1053,6 @@ class DungeonScene < Scene
   def draw_map(xoff = @pc.xpos*32, yoff = @pc.ypos*32)
     return unless Settings.show_background
     Surface.blit(@background, xoff - $cx, yoff - $cy, 640, 480, $field, 0, 0)
-#    $field.fill_rect(0, 0, 640, 480, [255,0,255])
-#    Surface.blit(@background, 0, 0, 640, 480, $field, 0, 0)
   end
 
 
@@ -1172,7 +1139,7 @@ class DungeonScene < Scene
 
   def init_floor
     @map = Map.new
-#    @map = NiheyaMap.new
+    # @map = NiheyaMap.new
     update_background
     @pc.position = @map.get_random_place
     @turn_count = 1
@@ -1185,11 +1152,10 @@ class DungeonScene < Scene
     end
     @objects << Exit.new(*@map.get_random_place)
     10.times do
-#      @objects << Enemy.new(*@map.get_random_place, ["ベネフィット","ちんたら","悪い箱"].sample)
+      # @objects << Enemy.new(*@map.get_random_place, ["ベネフィット","ちんたら","悪い箱"].sample)
       @objects << Enemy.new(*@map.get_random_place, ["ちんたら","悪い箱"].sample)
       @objects.last.change_direction(ALL_DIRECTIONS.sample)
     end
-#    (3..5).to_a.sample.times do
     (5..10).to_a.sample.times do
       @objects << [OtogiriSou, TakatobiSou, MegusuriSou, Yakusou, MoneyBag].sample.new(*@map.get_random_place)
     end
