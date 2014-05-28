@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 require_relative 'effects'
 require_relative 'inventory_window'
 require_relative 'message_window'
@@ -141,7 +140,7 @@ class DungeonScene < Scene
           Effects.busy?
         draw_basics
         draw_overlay
-        wait_list = ( [@player] + @objects.select{|obj|obj.is_a? Character} ).select{|obj|obj.in_motion?}
+        wait_list = ([@player] + @objects.select { |obj| obj.is_a? Character }).select(&:in_motion?)
         @osd.set_text("Waiting for #{wait_list.inspect}")
       else
         @dungeon_state = :TOP_LEVEL
