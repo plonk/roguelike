@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-require './loading.rb'
+require_relative 'loading'
 
 class TitleScene < Scene
   # タイトル画面表示に向けての初期化

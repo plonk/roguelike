@@ -415,4 +415,4 @@ class MoneyBag < Item
 end
 
 
-require './traps.rb'
+require_relative 'traps'

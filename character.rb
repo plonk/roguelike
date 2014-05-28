@@ -2,22 +2,18 @@
 require 'sdl'
 include SDL
 
-require "./map.rb"
-require './rgb_db.rb'
-require './rectangle.rb'
+require_relative 'map'
+require_relative 'rgb_db'
+require_relative 'rectangle'
 
 Encoding.default_external = "utf-8"
 
-require './mylib.rb'
-
-require './chip.rb'
-
-require "./motion.rb"
-
-require "./osd.rb"
-require './window.rb'
-
-require './game_object.rb'
+require_relative 'mylib'
+require_relative 'chip'
+require_relative 'motion'
+require_relative "osd"
+require_relative 'window'
+require_relative 'game_object'
 
 
 class Camera
@@ -29,14 +25,11 @@ class Camera
   end
 end
 
-require './scene.rb'
-
-require './title.rb'
-require './dungeon.rb'
-
-require './settings.rb'
-
-require './input.rb'
+require_relative 'scene'
+require_relative 'title'
+require_relative 'dungeon'
+require_relative 'settings'
+require_relative 'input'
 
 class Game
   def initialize

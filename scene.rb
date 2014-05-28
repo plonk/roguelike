@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-require './osd.rb'
+require_relative 'osd'
 
 class Scene
   # MUSIC_VOLUME = 64

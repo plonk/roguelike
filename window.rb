@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-require './sound.rb'
+require_relative 'sound'
 
 class Window
   def initialize(x = 50, y = 50)
     @font = Kanji.open("k14-2000-1.bdf", 14)
-    @font.add("A14.bdf")
+    @font.add("a14.bdf")
     @font.set_coding_system(Kanji::SJIS)
 
     @foreground = get_color("white")

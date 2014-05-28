@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-require './effects.rb'
+require_relative 'effects'
 
-require './message_window.rb'
-require './input.rb'
-require './status_overlay.rb'
+require_relative 'message_window'
+require_relative 'input'
+require_relative 'status_overlay'
 
 =begin
 以下のコードは

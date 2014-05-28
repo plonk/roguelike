@@ -67,7 +67,8 @@ def assert(exp, msg = nil)
   end
 end
 
-require './rgb_db.rb'
+require_relative 'rgb_db'
+
 def get_color(name)
   $rgb_db ||= RGB_DB.new
   code = $rgb_db.from_name_to_code(name)
