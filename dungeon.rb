@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 require_relative 'effects'
-
+require_relative 'inventory_window'
 require_relative 'message_window'
 require_relative 'input'
 require_relative 'status_overlay'
