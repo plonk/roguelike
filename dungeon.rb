@@ -63,12 +63,6 @@ class DungeonScene < Scene
     # 床タイル用
     @img2 = Surface.load("data/Dungeon_A2.png")
 
-    @map_hero1 = load_png("data/map_hero1.png")
-    @map_hero2 = load_png("data/map_hero2.png")
-    @map_enemy = load_png("data/map_enemy.png")
-    @map_exit = load_png("data/map_exit.png")
-    @map_item = load_png("data/map_item.png")
-    @map_trap = load_png("data/map_trap.png")
 
     @background = Surface.new(HWSURFACE, WIDTH*32, HEIGHT*32, $screen.format)
 
