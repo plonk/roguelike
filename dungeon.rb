@@ -7,6 +7,7 @@ require_relative 'input'
 require_relative 'status_overlay'
 require_relative 'map_view'
 require_relative 'dungeon_background'
+require_relative 'dungeon_input'
 
 =begin
 以下のコードは
@@ -56,6 +57,8 @@ class DungeonScene < Scene
     update_status_overlay
 
     @message_window = MessageWindow.open
+
+    @input = DungeonInput.new
 
     @dungeon_state = :TOP_LEVEL
   end
@@ -571,23 +574,23 @@ class DungeonScene < Scene
   end
 
   def dungeon_top_level
-    if Input.pressed? Key::SPACE
+    if @input.map?
       # マップのみの表示
       fill_screen [0, 0, 0]
       draw_overlay(false)
       return # 通常の描画をせずに戻る
-    elsif Input.pressed? Key::Z and Input.pressed? Key::A
+    elsif @input.first_forward?
       # 足踏みモードに移行する
       @dungeon_state = :WAIT_IN_PLACE
-    elsif Input.triggered? Key::S
+    elsif @input.menu?
       @menu_stack << create_command_menu
       Sound.beep
       @dungeon_state = :DEBUG_MENU
-    elsif Input.triggered? Key::D
+    elsif @input.debug_menu?
       @menu_stack << create_debug_menu
       Sound.beep
       @dungeon_state = :DEBUG_MENU
-    elsif Input.pressed?(Key::Z, 0.010) # 10msec 以上前から押されていたら
+    elsif @input.attack?
       # 攻撃
       Mixer.play_channel(0, @swish_wav, 0)
       attack_motion = attack(@pc.direction)
@@ -631,16 +634,16 @@ class DungeonScene < Scene
         queue { @objects.delete(enemy) }
       end
       queue { @dungeon_state = :MONSTERS_MOVE } # モンスター移動フェーズへ移行
-    elsif Input.pressed? Key::X
+    elsif @input.rotate?
       # 方向転換
       if dir = get_direction
         @pc.change_direction(dir)
       end
-    elsif Input.pressed? Key::ESCAPE
+    elsif @input.quit?
       # タイトルシーンに戻る
       load "./dungeon.rb"
       @next_scene = TitleScene
-    elsif dir = get_direction
+    elsif dir = @input.direction
       # 十字キーが押されていた
       xpos = @pc.xpos; ypos = @pc.ypos
       xoffset, yoffset = direction_to_offsets(dir)
@@ -670,7 +673,7 @@ class DungeonScene < Scene
   end
 
   def draw_diagonal_arrows
-    $field.put(@diagonal_arrows, 320 - 32, 240 - 32 - 4) if diagonal_locked?
+    $field.put(@diagonal_arrows, 320 - 32, 240 - 32 - 4) if @input.diagonal_locked?
   end
 
   def someone_there?(xpos, ypos)
@@ -874,39 +877,6 @@ class DungeonScene < Scene
       if obj.xpos == @pc.xpos and obj.ypos == @pc.ypos
         obj.on_enter(self)
       end
-    end
-  end
-
-  def diagonal_locked?
-    # return (Input.pressed? Key::W or Input.pressed? Key::LSHIFT)
-    return Input.pressed? Key::W
-  end
-
-  # 入力されている場合は方向を
-  # 入力がない場合は nil を返す
-  def get_direction
-    if Input.pressed? Key::UP and Input.pressed? Key::LEFT
-      return UPPER_LEFT
-    elsif Input.pressed? Key::UP and Input.pressed? Key::RIGHT
-      return UPPER_RIGHT
-    elsif Input.pressed? Key::DOWN and Input.pressed? Key::LEFT
-      return BOTTOM_LEFT
-    elsif Input.pressed? Key::DOWN and Input.pressed? Key::RIGHT
-      return BOTTOM_RIGHT
-    end
-
-    return nil if diagonal_locked?
-
-    if Input.pressed? Key::UP
-      UP
-    elsif Input.pressed? Key::DOWN
-      DOWN
-    elsif Input.pressed? Key::LEFT
-      LEFT
-    elsif Input.pressed? Key::RIGHT
-      RIGHT
-    else
-      nil
     end
   end
 
