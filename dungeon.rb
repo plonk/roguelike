@@ -253,21 +253,21 @@ class DungeonScene < Scene
     Settings.variables.each do |sym|
       label = Settings.label_for(sym)
       assert(label.is_a? String)
-      #+"(#{Settings.value_for(sym)})"
+
       debug_menu.add_item(label) do
         bool_menu = Menu.new
-        bool_menu.add_item("オン") {
-          @message_window.add_page("ワールドの拡大表示がオンになったよ")
+        bool_menu.add_item("ON") do
+          @message_window.add_page("#{label}がオンになったよ")
           eval("Settings.#{sym} = true")
           Settings.save
           bool_menu.hide
-        }
-        bool_menu.add_item("オフ") {
-          @message_window.add_page("ワールドの拡大表示がオフになったよ")
+        end
+        bool_menu.add_item("OFF") do
+          @message_window.add_page("#{label}がオフになったよ")
           eval("Settings.#{sym} = false")
           Settings.save
           bool_menu.hide
-        }
+        end
         bool_menu.set_position(450, Menu::Y)
         bool_menu.set_size(110, 74)
         bool_menu.select( Settings.value_for(sym) ? 0 : 1 )
