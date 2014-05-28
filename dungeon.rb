@@ -579,7 +579,7 @@ class DungeonScene < Scene
       fill_screen [0, 0, 0]
       draw_overlay(false)
       return # 通常の描画をせずに戻る
-    elsif @input.first_forward?
+    elsif @input.fast_forward?
       # 足踏みモードに移行する
       @dungeon_state = :WAIT_IN_PLACE
     elsif @input.menu?

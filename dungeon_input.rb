@@ -4,7 +4,7 @@ class DungeonInput
     Input.pressed? Key::SPACE
   end
 
-  def first_forward?
+  def fast_forward?
     Input.pressed? Key::Z and Input.pressed? Key::A
   end
 
