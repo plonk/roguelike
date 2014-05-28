@@ -6,7 +6,7 @@ require_relative 'message_window'
 require_relative 'input'
 require_relative 'status_overlay'
 require_relative 'map_view'
-require_relative 'autotile'
+require_relative 'dungeon_background'
 
 =begin
 以下のコードは
@@ -26,6 +26,8 @@ class DungeonScene < Scene
     @dimmer = Surface.new( HWSURFACE, SCREEN_WIDTH, SCREEN_HEIGHT, $screen.format )
     @dimmer.fill_rect( 0, 0, 640, 480, [0,0,0] ) # まっくろに塗りつぶす
     @dimmer.set_alpha( SRCALPHA, 128 ) # 半透明
+
+    @background = DungeonBackground.new
 
     @menu_stack = []
 
@@ -59,17 +61,6 @@ class DungeonScene < Scene
   end
 
   def load_resources
-    # 壁タイル用
-    img = Surface.load('data/Dungeon_A1.png')
-    # 床タイル用
-    @img2 = Surface.load("data/Dungeon_A2.png")
-
-    @background = Surface.new(HWSURFACE, WIDTH*32, HEIGHT*32, $screen.format)
-
-    @tileset = Surface.new(HWSURFACE, 64, 96, $screen.format)
-    Surface.blit(img, 0, 192, 64, 96, @tileset, 0, 0)
-    @autotile = Autotile.new(@tileset)
-
     # 音
     @wave = Mixer::Wave.load("data/noise.wav")
     @swish_wav = Mixer::Wave.load("data/swish.wav")
@@ -438,7 +429,7 @@ class DungeonScene < Scene
 
     # 実際にロードする
     @map = Map.new( map_sec.join("") )
-    update_background
+    @background.update(@map)
 
     @turn_count = 1
     @floor_level = 1
@@ -482,7 +473,7 @@ class DungeonScene < Scene
     $field.fill_rect(0,0,640,480, @offscreen_color)
     $miniscreen.fill_rect(0,0,320,240, @offscreen_color)
     fill_screen(@offscreen_color)
-    draw_map
+    draw_background
 
     $field.set_clip_rect( 320-48, 240-48, 96, 96 )
 
@@ -806,7 +797,7 @@ class DungeonScene < Scene
       $field.fill_rect(0,0,640,480, @offscreen_color)
       $miniscreen.fill_rect(0,0,320,240, @offscreen_color)
       fill_screen(@offscreen_color)
-      draw_map(@pc.oldx * 32 + xstep * i, @pc.oldy * 32 + ystep * i)
+      draw_background(@pc.oldx * 32 + xstep * i, @pc.oldy * 32 + ystep * i)
       @objects.each do |obj|
         if @moved.include? obj
           # (x, y) 背景に同期した座標
@@ -919,31 +910,18 @@ class DungeonScene < Scene
     end
   end
 
-  def update_background
-    (0...HEIGHT).each do |y|
-      (0...WIDTH).each do |x|
-        if @map.get(x, y) == WALL
-          tile = @autotile.wall(@map.atinfo(x, y))
-          Surface.blit(tile, 0, 0, 32, 32, @background, x * 32, y * 32)
-        else
-          # 床
-          Surface.blit(@img2, 0, 0, 32, 32, @background, x * 32, y * 32)
-        end
-      end # of each
-    end
-  end
-
   # ひきのばし
   # まだ書いてない
-  def draw_map(xoff = @pc.xpos*32, yoff = @pc.ypos*32)
+  def draw_background(xoff = @pc.xpos*32, yoff = @pc.ypos*32)
     return unless Settings.show_background
-    Surface.blit(@background, xoff - $cx, yoff - $cy, 640, 480, $field, 0, 0)
+
+    Surface.blit(@background.surface, xoff - $cx, yoff - $cy, 640, 480, $field, 0, 0)
   end
 
   def init_floor
     @map = Map.new
     # @map = NiheyaMap.new
-    update_background
+    @background.update(@map)
     @pc.position = @map.get_random_place
     @turn_count = 1
 
